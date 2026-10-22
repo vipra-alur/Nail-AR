@@ -1,0 +1,54 @@
+using UnityEngine;
+
+public class NailTracker : MonoBehaviour
+{
+    [Tooltip("Controls the width and length")]
+    public float nailSize = 3.5f;
+
+    [Tooltip("Controls how flat the nail is (keep this number small!)")]
+    public float nailThickness = 0.5f;
+
+    public GameObject nailPrefab;
+    private bool isAttached = false;
+    private int[] fingertipIDs = { 4, 8, 12, 16, 20 };
+
+    void Update()
+    {
+        if (isAttached) return;
+
+        GameObject canvas = GameObject.Find("Main Canvas");
+        if (canvas == null) return;
+
+        Transform pointList = GetPointList(canvas.transform);
+
+        if (pointList != null && pointList.childCount >= 21)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                Transform fingerDot = pointList.GetChild(fingertipIDs[i]);
+                GameObject nail = Instantiate(nailPrefab, fingerDot);
+
+                nail.transform.localPosition = Vector3.zero;
+                nail.transform.localRotation = Quaternion.identity;
+
+                // FIX: X and Y use nailSize, but Z uses the new nailThickness!
+                nail.transform.localScale = new Vector3(nailSize, nailSize, nailThickness);
+            }
+            isAttached = true;
+        }
+    }
+
+    Transform GetPointList(Transform parent)
+    {
+        string cleanName = parent.name.Replace(" ", "");
+        if (cleanName.Contains("PointListAnnotation") && parent.childCount >= 21)
+            return parent;
+
+        foreach (Transform child in parent)
+        {
+            Transform found = GetPointList(child);
+            if (found != null) return found;
+        }
+        return null;
+    }
+}
