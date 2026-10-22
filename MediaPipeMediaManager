@@ -1,0 +1,96 @@
+using UnityEngine;
+using System.Collections;
+using System.IO;
+
+public class MediaPipeMediaManager : MonoBehaviour
+{
+    [Tooltip("Drag your Gallery_Button here")]
+    public UnityEngine.UI.Image galleryIconPreview;
+
+    [Tooltip("Drag your Solution object here")]
+    public GameObject mediaPipeSolution;
+
+    // --- FEATURE 3: GALLERY IMAGE TO NAIL ---
+    public void OnClick_OpenGallery()
+    {
+#if UNITY_EDITOR
+        string path = UnityEditor.EditorUtility.OpenFilePanel("Select Nail Design Image", "", "png,jpg,jpeg");
+        if (!string.IsNullOrEmpty(path))
+        {
+            StartCoroutine(LoadImageAndApplyToNails(path));
+        }
+#else
+        Debug.Log("Gallery selection is optimized for editor testing.");
+#endif
+    }
+
+    private IEnumerator LoadImageAndApplyToNails(string path)
+    {
+        byte[] fileData = null;
+        if (path.StartsWith("file://")) path = path.Replace("file://", "");
+
+        if (File.Exists(path))
+        {
+            fileData = File.ReadAllBytes(path);
+        }
+
+        if (fileData != null)
+        {
+            Texture2D tex = new Texture2D(2, 2, TextureFormat.RGB24, false);
+            if (tex.LoadImage(fileData))
+            {
+                ApplyTextureToNails(tex);
+                if (galleryIconPreview != null)
+                {
+                    galleryIconPreview.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+                }
+            }
+        }
+        yield return null;
+    }
+
+    // --- FEATURE 2: ENVIRONMENT SNAPSHOT (No UI, No Skeleton Lines) ---
+    public void OnClick_TakePhoto()
+    {
+        StartCoroutine(CaptureEnvironmentTextureClean());
+    }
+
+    private IEnumerator CaptureEnvironmentTextureClean()
+    {
+        GameObject appUI = GameObject.Find("App_UI");
+        if (appUI != null) appUI.SetActive(false);
+
+        GameObject annotationLayer = GameObject.Find("Annotation Layer");
+        if (annotationLayer != null) annotationLayer.SetActive(false);
+
+        yield return new WaitForEndOfFrame();
+        yield return new WaitForEndOfFrame();
+
+        Texture2D screenTex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+        screenTex.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+        screenTex.Apply();
+
+        if (appUI != null) appUI.SetActive(true);
+        if (annotationLayer != null) annotationLayer.SetActive(true);
+
+        ApplyTextureToNails(screenTex);
+        Debug.Log("Clean environment snapshot printed on nails!");
+    }
+
+    void ApplyTextureToNails(Texture2D tex)
+    {
+        GameObject[] allObjects = GameObject.FindObjectsOfType<GameObject>();
+        foreach (GameObject obj in allObjects)
+        {
+            if (obj.name.Contains("AR_Nail"))
+            {
+                Renderer nailRenderer = obj.GetComponent<Renderer>();
+                if (nailRenderer != null)
+                {
+                    nailRenderer.material.mainTexture = tex;
+                    nailRenderer.material.color = Color.white;
+                }
+            }
+        }
+    }
+}
