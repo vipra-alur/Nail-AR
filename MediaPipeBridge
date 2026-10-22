@@ -1,0 +1,38 @@
+using UnityEngine;
+using Mediapipe.Tasks.Vision.HandLandmarker; // Tells Unity to talk to MediaPipe
+
+public class MediaPipeBridge : MonoBehaviour
+{
+    [Tooltip("Drag your NailAnchorManager here")]
+    public FingertipAnchor nailManager;
+
+    // The MediaPipe ID numbers for the 5 fingertips: Thumb, Index, Middle, Ring, Pinky
+    private int[] fingertipIDs = { 4, 8, 12, 16, 20 };
+
+    // We will tell MediaPipe to trigger this function every single frame it sees a hand
+    public void OnHandTrackingResult(HandLandmarkerResult result)
+    {
+        // If no hand is found, stop and do nothing
+        if (result.handLandmarks == null || result.handLandmarks.Count == 0) return;
+
+        // Grab the 21 3D points of the first hand it sees
+        var handPoints = result.handWorldLandmarks[0].landmarks;
+
+        // Loop through our 5 fingertips
+        for (int i = 0; i < 5; i++)
+        {
+            int pointID = fingertipIDs[i]; // Gets 4, then 8, then 12...
+
+            // Extract the X, Y, Z coordinates for this fingertip
+            float x = handPoints[pointID].x;
+            float y = handPoints[pointID].y;
+            float z = handPoints[pointID].z;
+
+            // Create a Unity coordinate (we flip Y because MediaPipe reads upside-down)
+            Vector3 targetPos = new Vector3(x, -y, z);
+
+            // Send this coordinate to the smooth gliding script we wrote in Part 6!
+            nailManager.MoveNail(i, targetPos);
+        }
+    }
+}
