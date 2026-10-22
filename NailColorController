@@ -1,0 +1,24 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+public class NailColorController : MonoBehaviour
+{
+    public void SetNailColor(Image buttonImage)
+    {
+        GameObject[] allObjects = GameObject.FindObjectsOfType<GameObject>();
+
+        foreach (GameObject obj in allObjects)
+        {
+            if (obj.name.Contains("AR_Nail"))
+            {
+                Renderer nailRenderer = obj.GetComponent<Renderer>();
+                if (nailRenderer != null)
+                {
+                    // CRITICAL FIX: Clear any active photo/gallery texture so solid colors show cleanly!
+                    nailRenderer.material.mainTexture = null;
+                    nailRenderer.material.color = buttonImage.color;
+                }
+            }
+        }
+    }
+}
